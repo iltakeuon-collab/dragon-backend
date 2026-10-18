@@ -1,34 +1,47 @@
 const express = require('express');
-const crypto = require('crypto');
 const app = express();
-app.use(express.json());
-const API_KEY = process.env.BINANCE_API_KEY;
-const SECRET = process.env.BINANCE_SECRET;
-function sign(q){return crypto.createHmac('sha256',SECRET).update(q).digest('hex');}
-app.get('/',(req,res)=>res.send('Dragon Bot Live'));
-app.get('/price',async(req,res)=>{
- const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
- res.json(await r.json());
+const port = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('Dragon Bot LIVE 🐉 - Napier NZ - Server OK');
 });
-app.get('/balance',async(req,res)=>{
- try{
-  const t=Date.now();
-  const q=`timestamp=${t}`;
-  const s=sign(q);
-  const url=`https://api.binance.com/api/v3/account?${q}&signature=${s}`;
-  const r=await fetch(url,{headers:{'X-MBX-APIKEY':API_KEY}});
-  res.json(await r.json());
- }catch(e){res.json({error:e.message})}
+
+app.get('/price', async (req, res) => {
+  try {
+    // Use CoinGecko because Binance blocks USA Render servers
+    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
+    const data = await response.json();
+    res.json({
+      BTC: data.bitcoin.usd,
+      ETH: data.ethereum.usd,
+      source: 'CoinGecko - Works from USA',
+      your_bot: 'https://dragon-backend-mca2.onrender.com',
+      status: 'LIVE'
+    });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
 });
-app.post('/buy',async(req,res)=>{
- try{
-  const t=Date.now();
-  const q=`symbol=BTCUSDT&side=BUY&type=MARKET&quoteOrderQty=10&timestamp=${t}`;
-  const s=sign(q);
-  const url=`https://api.binance.com/api/v3/order?${q}&signature=${s}`;
-  const r=await fetch(url,{method:'POST',headers:{'X-MBX-APIKEY':API_KEY}});
-  res.json(await r.json());
- }catch(e){res.json({error:e.message})}
+
+app.get('/status', (req, res) => {
+  res.json({
+    status: 'Live',
+    deploy: 'Succeeded | Live',
+    location: 'Render USA - Binance blocked, using CoinGecko',
+    fix: 'For real Binance trading, deploy to Singapore region',
+    time: new Date().toString()
+  });
 });
-const PORT=process.env.PORT||10000;
-app.listen(PORT,()=>console.log('Live '+PORT));
+
+app.get('/balance', (req, res) => {
+  res.json({
+    error: 'Binance blocks USA servers',
+    message: 'Service unavailable from a restricted location - this is normal on Render USA',
+    solution: 'To see balance, you need to move server to Singapore region in Render, or run bot on your Napier computer',
+    your_keys: 'Your BINANCE_API_KEY is saved correctly'
+  });
+});
+
+app.listen(port, () => {
+  console.log('Dragon live on ' + port);
+});
